@@ -10,28 +10,28 @@ import (
 	"time"
 )
 
-// The six data sources plus the Characters sub-pages. Ids from ../CLAUDE.md.
-var dataSources = map[string]string{
-	"projects":   "1af6c921-3682-4541-a2f4-f7167850d662",
-	"notes":      "2a246926-9d80-4970-bb54-18ec35e3bbaf",
-	"sources":    "075a283b-911b-43d8-9620-84d0020c6df1",
-	"journal":    "68062051-1cd2-460b-aa7b-528a1fb68f2a",
-	"tasks":      "c563d964-234d-418d-96dc-5529ea0582b5",
-	"briefs":     "4464f0d6-bbef-4c9b-980c-87db3e171bdb",
-	"characters": "37d12e7c-1e38-4647-9d21-09cc52598b2a",
-}
+// dataSources and databases map a configured kind to its Notion ids; topDirs is the configured kinds
+// in layout order. All three are set from the config by SetDatabases before Fetch runs.
+var (
+	dataSources = map[string]string{}
+	databases   = map[string]string{}
+	topDirs     []string
+)
 
-var databases = map[string]string{
-	"projects":   "4cb76a11-4b4c-4175-8329-7c75174ecfc2",
-	"notes":      "662a02b9-c2eb-42aa-a2b0-4103c2eed3bd",
-	"sources":    "1666d807-7e71-431f-bccf-3e85b69c7e30",
-	"journal":    "e32ee577-ddc3-4fdb-8d14-15b79792d5ea",
-	"tasks":      "194876a9-db46-4b7d-bd7b-3d01046b9dda",
-	"briefs":     "367b079e-f232-47c7-a421-c4734d470c1d",
-	"characters": "283b1a54-ffe0-4145-bab5-8dcc7807bf3f",
+// SetDatabases installs the configured databases. It returns the error from Config.Kinds.
+func SetDatabases(cfg *Config) error {
+	kinds, err := cfg.Kinds()
+	if err != nil {
+		return err
+	}
+	dataSources, databases = map[string]string{}, map[string]string{}
+	for _, k := range kinds {
+		dataSources[k] = cfg.Databases[k].DataSource
+		databases[k] = cfg.Databases[k].Database
+	}
+	topDirs = kinds
+	return nil
 }
-
-var topDirs = []string{"projects", "notes", "sources", "briefs", "journal", "tasks", "characters"}
 
 // Doc is one Notion page headed for one bundle file.
 type Doc struct {
@@ -71,7 +71,7 @@ func parseTime(s string) time.Time {
 	return t
 }
 
-// Fetch reads every page of the seven sources and their bodies (via the cache).
+// Fetch reads every page of the configured sources and their bodies (via the cache).
 func Fetch(ctx context.Context, c *Client, cache *Cache, full bool) (*Snapshot, error) {
 	snap := &Snapshot{ByID: map[string]*Doc{}, DBs: map[string]Database{}}
 	for _, k := range topDirs {

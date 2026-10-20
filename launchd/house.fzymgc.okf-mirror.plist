@@ -6,10 +6,12 @@
 
   Install (as the user that owns the bundle; mise from Homebrew at /opt/homebrew/bin/mise):
     mkdir -p ~/.config/mise/conf.d
-    printf '[tools]\n"github:seanb4t/notion-okf-mirror" = "0.1.0"\n' > ~/.config/mise/conf.d/notion-okf-mirror.toml
+    printf '[tools]\n"github:seanb4t/notion-okf-mirror" = "0.2.0"\n' > ~/.config/mise/conf.d/notion-okf-mirror.toml
     mise install
     mkdir -p ~/.config/okf-mirror && chmod 700 ~/.config/okf-mirror
     printf 'NOTION_TOKEN=ntn_...\n' > ~/.config/okf-mirror/env && chmod 600 ~/.config/okf-mirror/env
+    mise exec -- notion-okf-mirror config init      # then fill in the database ids
+    mise exec -- notion-okf-mirror config show      # out, token_file and databases as the job will see them
     sed "s|__HOME__|$HOME|g" launchd/house.fzymgc.okf-mirror.plist > ~/Library/LaunchAgents/house.fzymgc.okf-mirror.plist
     launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/house.fzymgc.okf-mirror.plist
     launchctl kickstart -k gui/$(id -u)/house.fzymgc.okf-mirror   # first run now
@@ -26,10 +28,6 @@
     <string>--</string>
     <string>notion-okf-mirror</string>
     <string>--once</string>
-    <string>--token-file</string>
-    <string>__HOME__/.config/okf-mirror/env</string>
-    <string>--out</string>
-    <string>__HOME__/okf-mirror</string>
   </array>
   <key>StartCalendarInterval</key>
   <dict>

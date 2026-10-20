@@ -28,42 +28,64 @@ Or download `notion-okf-mirror_<version>_<os>_<arch>.tar.gz` from the
 
 ## Configure
 
-The program needs a Notion integration token with read access to the databases it mirrors. Either
-export it:
+Settings come from a YAML file (loaded with [koanf](https://github.com/knadh/koanf)), then
+`OKF_MIRROR_*` environment variables, then flags. Write the example and fill in your database ids:
 
 ```bash
-export NOTION_TOKEN=ntn_...
+notion-okf-mirror config init        # writes ~/.config/okf-mirror/config.yaml (or $XDG_CONFIG_HOME/okf-mirror/)
+notion-okf-mirror config show        # prints the resolved settings and the databases it will read
 ```
 
-or keep it in a file and pass `--token-file`:
+```yaml
+out: ~/okf-mirror                      # the bundle is written to <out>/okf
+token_file: ~/.config/okf-mirror/env   # a NOTION_TOKEN=... line; env NOTION_TOKEN wins when set
+interval: 24h                          # loop interval when not run with --once
+validate: true                         # refuse to write a bundle that fails OKF 0.2 validation
+databases:                             # by kind; omit kinds you do not have, do not add others
+  projects:   {database: "<database id>", data_source: "<data source id>"}
+  notes:      {database: "...", data_source: "..."}
+  sources:    {database: "...", data_source: "..."}
+  briefs:     {database: "...", data_source: "..."}
+  journal:    {database: "...", data_source: "..."}
+  tasks:      {database: "...", data_source: "..."}
+  characters: {database: "...", data_source: "..."}
+```
+
+The kinds are fixed (`projects`, `notes`, `sources`, `briefs`, `journal`, `tasks`, `characters`)
+because each one has its own index grouping and frontmatter rules; the ids are yours. The
+`database` id is what `GET /databases/{id}` takes (title and description); the `data_source` id is
+what `POST /data_sources/{id}/query` takes. Both show in Notion's share dialog for the database.
+
+Environment: `OKF_MIRROR_CONFIG` (path of the file), `OKF_MIRROR_OUT`, `OKF_MIRROR_TOKEN_FILE`,
+`OKF_MIRROR_INTERVAL`, `OKF_MIRROR_VALIDATE`, and `NOTION_TOKEN` for the token itself. A token file
+is the safer home for the token:
 
 ```bash
 mkdir -p ~/.config/okf-mirror && chmod 700 ~/.config/okf-mirror
 printf 'NOTION_TOKEN=ntn_...\n' > ~/.config/okf-mirror/env && chmod 600 ~/.config/okf-mirror/env
 ```
 
-The database ids it reads are in `model.go` (`dataSources`, `databases`). This is the author's
-workspace; point them at your own databases before you use it elsewhere.
-
 ## Run
 
 ```bash
-notion-okf-mirror --once --out ~/okf-mirror                      # one pass
-notion-okf-mirror --once --dry-run --token-file ~/.config/okf-mirror/env   # report, write nothing
-notion-okf-mirror validate ~/okf-mirror/okf                      # built-in OKF 0.2 check
+notion-okf-mirror --once                        # one pass with the configured settings
+notion-okf-mirror --once --dry-run              # report what would change, write nothing
+notion-okf-mirror --once --out /tmp/okf         # flags override the config
+notion-okf-mirror validate ~/okf-mirror/okf     # built-in OKF 0.2 check
 notion-okf-mirror version
-okflint validate --manifest ~/okf-mirror/okf-base.yaml           # external check (uv tool install okflint)
+okflint validate --manifest ~/okf-mirror/okf-base.yaml   # external check (uv tool install okflint)
 ```
 
 | Flag | Meaning |
 |---|---|
-| `--out DIR` | target directory; the bundle is `DIR/okf`. Default `$OKF_MIRROR_OUT`, else `~/okf-mirror` |
+| `--config FILE` | config file; default `$OKF_MIRROR_CONFIG`, else `~/.config/okf-mirror/config.yaml` |
+| `--out DIR` | target directory; the bundle is `DIR/okf` (config `out`, default `~/okf-mirror`) |
 | `--once` | one pass and exit; without it the program loops every `--interval` |
 | `--interval 24h` | loop interval |
 | `--dry-run` | fetch and render, report what would change, write nothing |
 | `--full` | refetch every page body, ignoring the cache |
-| `--token-file FILE` | a file with a `NOTION_TOKEN=...` line; default is the `NOTION_TOKEN` variable |
-| `--no-validate` | skip the OKF validation of the result |
+| `--token-file FILE` | a file with a `NOTION_TOKEN=...` line (config `token_file`); `NOTION_TOKEN` in the environment wins |
+| `--no-validate` | skip the OKF validation of the result (config `validate: false`) |
 
 A full pass is about 230 API calls (around 90 s at 3 requests/s); a cached pass is about 50 calls.
 
@@ -139,9 +161,9 @@ Two gates:
 
 ## Running nightly on macOS
 
-`launchd/house.fzymgc.okf-mirror.plist` is a launch agent template that runs one pass at 03:30
-through `mise exec`, so `mise up` upgrades the binary the job uses. The install steps are in the
-file's header comment.
+`launchd/house.fzymgc.okf-mirror.plist` is a launch agent template that runs `notion-okf-mirror
+--once` at 03:30 through `mise exec`, so `mise up` upgrades the binary the job uses; paths and
+databases come from the config file. The install steps are in the file's header comment.
 
 ## Development
 
