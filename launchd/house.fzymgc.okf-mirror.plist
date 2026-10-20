@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  notion-okf-mirror: nightly Notion -> OKF 0.2 markdown mirror, run through mise so `mise up`
+  upgrades it. Runs at 03:30 local time; launchd runs a missed slot at the next wake.
+
+  Install (as the user that owns the bundle; mise from Homebrew at /opt/homebrew/bin/mise):
+    mkdir -p ~/.config/mise/conf.d
+    printf '[tools]\n"github:seanb4t/notion-okf-mirror" = "0.1.0"\n' > ~/.config/mise/conf.d/notion-okf-mirror.toml
+    mise install
+    mkdir -p ~/.config/okf-mirror && chmod 700 ~/.config/okf-mirror
+    printf 'NOTION_TOKEN=ntn_...\n' > ~/.config/okf-mirror/env && chmod 600 ~/.config/okf-mirror/env
+    sed "s|__HOME__|$HOME|g" launchd/house.fzymgc.okf-mirror.plist > ~/Library/LaunchAgents/house.fzymgc.okf-mirror.plist
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/house.fzymgc.okf-mirror.plist
+    launchctl kickstart -k gui/$(id -u)/house.fzymgc.okf-mirror   # first run now
+    tail -3 ~/Library/Logs/okf-mirror.log
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>house.fzymgc.okf-mirror</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/mise</string>
+    <string>exec</string>
+    <string>--</string>
+    <string>notion-okf-mirror</string>
+    <string>--once</string>
+    <string>--token-file</string>
+    <string>__HOME__/.config/okf-mirror/env</string>
+    <string>--out</string>
+    <string>__HOME__/okf-mirror</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>3</integer>
+    <key>Minute</key>
+    <integer>30</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>__HOME__/Library/Logs/okf-mirror.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/Library/Logs/okf-mirror.log</string>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>Nice</key>
+  <integer>10</integer>
+</dict>
+</plist>

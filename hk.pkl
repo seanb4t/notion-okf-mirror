@@ -1,0 +1,29 @@
+// Git hooks for this repository. The import version must equal the hk version in mise.toml.
+// Install the hooks with `hk install --mise`. `HK=0 git commit` skips them once.
+amends "package://github.com/jdx/hk/releases/download/v2.7.1/hk@2.7.1#/Config.pkl"
+
+// Top-level steps create the `check`, `fix` and `pre-commit` hooks (pre-commit fixes, stages and
+// stashes unstaged work while it runs).
+steps {
+  ["gofumpt"] {
+    glob = List("*.go")
+    check_list_files = "gofumpt -l {{files}}"
+    fix = "gofumpt -w {{files}}"
+  }
+  ["golangci-lint"] {
+    glob = List("*.go")
+    check = "golangci-lint run ./..."
+  }
+  ["go-vet"] {
+    glob = List("*.go", "go.mod", "go.sum")
+    check = "go vet ./..."
+  }
+}
+
+hooks {
+  ["pre-push"] {
+    steps {
+      ["go-test"] { check = "go test ./..." }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+# Local build (go build -o notion-okf-mirror .) and goreleaser output
+/notion-okf-mirror
+/dist/
+
+# Never commit a token file
+.env
+*.env
+
+.DS_Store

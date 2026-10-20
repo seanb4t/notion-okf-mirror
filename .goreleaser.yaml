@@ -1,0 +1,35 @@
+# goreleaser v2. The release workflow runs `goreleaser release --clean` on a v* tag and publishes
+# notion-okf-mirror_<version>_<os>_<arch>.tar.gz plus checksums.txt to the GitHub release, which is
+# what the mise `github:seanb4t/notion-okf-mirror` backend installs from.
+version: 2
+
+project_name: notion-okf-mirror
+
+builds:
+  - id: notion-okf-mirror
+    main: .
+    binary: notion-okf-mirror
+    env:
+      - CGO_ENABLED=0
+    goos: [darwin, linux]
+    goarch: [amd64, arm64]
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: default
+    formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  use: github-native

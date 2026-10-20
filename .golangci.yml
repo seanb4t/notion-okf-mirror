@@ -1,0 +1,11 @@
+version: "2"
+linters:
+  default: none
+  enable: [errcheck, ineffassign, staticcheck, unused]
+  exclusions:
+    presets: [std-error-handling]
+formatters:
+  enable: [gofumpt]
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

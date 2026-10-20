@@ -1,0 +1,35 @@
+# Tooling for notion-okf-mirror. `mise install` puts the tools on PATH and `hk install --mise`
+# wires the git hooks in hk.pkl. Versions are pinned; bump them deliberately and keep the hk
+# version equal to the import in hk.pkl.
+[tools]
+go = "1.27.2"
+gofumpt = "0.12.0"
+golangci-lint = "2.15.0"
+goreleaser = "2.18.3"
+hk = "2.7.1"
+
+[tasks.build]
+description = "Build ./notion-okf-mirror"
+run = "go build -o notion-okf-mirror ."
+
+[tasks.fmt]
+description = "Format with gofumpt"
+run = "gofumpt -w ."
+
+[tasks.vet]
+run = "go vet ./..."
+
+[tasks.lint]
+description = "golangci-lint: errcheck, ineffassign, staticcheck, unused, gofumpt"
+run = "golangci-lint run ./..."
+
+[tasks.test]
+run = "go test ./..."
+
+[tasks.check]
+description = "Everything CI runs"
+depends = ["vet", "lint", "test"]
+
+[tasks."release:check"]
+description = "Validate .goreleaser.yaml and build a local snapshot into dist/"
+run = ["goreleaser check", "goreleaser release --snapshot --clean"]
